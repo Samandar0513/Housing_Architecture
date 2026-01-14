@@ -15,6 +15,7 @@ public class PropertyService : IPropertyService
     private readonly AppDbContext _db;
     private readonly IMapper _mapper;
     private readonly IValidator<PropertyCreateDTO> _validator;
+    private readonly IValidator<PropertyUpdateDTO> _updateValidator;
     private readonly IFileStorageService _fileStorage;
     private const string PROPERTY_BUCKET = "property-images";
 
@@ -22,12 +23,14 @@ public class PropertyService : IPropertyService
         AppDbContext db,
         IMapper mapper,
         IValidator<PropertyCreateDTO> validator,
-        IFileStorageService fileStorageService)
+        IFileStorageService fileStorageService,
+        IValidator<PropertyUpdateDTO> updateValidator)
     {
         _db = db;
         _mapper = mapper;
         _validator = validator;
         _fileStorage = fileStorageService;
+        _updateValidator = updateValidator;
     }
 
     public ResponseModel<PropertyDTO> CreateProperty(int userId, PropertyCreateDTO propertyCreateDTO)
@@ -126,7 +129,7 @@ public class PropertyService : IPropertyService
         .Include(p => p.Category)
         .Include(p => p.Photos)
         .Include(p => p.PropertyAmenities).ThenInclude(pa => pa.Amenity)
-        .Include(p => p.Documents).Where(p => p.Documents.Any() && p.Documents.Any(d => d.Status == DocumentStatus.Approved))
+        //.Include(p => p.Documents).Where(p => p.Documents.Any() && p.Documents.Any(d => d.Status == DocumentStatus.Approved))
         .Where(p=>p.IsActive) // faqat faol mulklar
         .ToList();
 
@@ -154,8 +157,9 @@ public class PropertyService : IPropertyService
         return ResponseModel<IEnumerable<PropertyDTO>>.Ok(propertyDTOs, "Foydalanuvchi mulklari muvaffaqiyatli olindi.");
     }
 
-    public ResponseModel<PropertyDTO> UpdateProperty(int propertyId, PropertyCreateDTO propertyUpdateDTO)
+    public ResponseModel<PropertyDTO> UpdateProperty(int propertyId, PropertyUpdateDTO propertyUpdateDTO, int currentUserId)
     {
+        // 1. Property ni olish
         var property = _db.Properties
             .Include(p => p.Photos)
             .Include(p => p.PropertyAmenities)
@@ -166,13 +170,21 @@ public class PropertyService : IPropertyService
             return ResponseModel<PropertyDTO>.Fail("Xatolik", "Mulk topilmadi!");
         }
 
-        var validationResult = _validator.Validate(propertyUpdateDTO);
+        // 2. Foydalanuvchi tekshiruvi
+        if (property.UserId != currentUserId)
+        {
+            return ResponseModel<PropertyDTO>.Fail("Xatolik", "Sizda bu mulkni tahrirlash huquqi yo'q!");
+        }
+
+        // 3. Validatsiya
+        var validationResult = _updateValidator.Validate(propertyUpdateDTO);
         if (!validationResult.IsValid)
         {
             var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
             return ResponseModel<PropertyDTO>.Fail("Validation xatoligi", errors);
         }
 
+        // 4. Asosiy ma'lumotlarni yangilash
         property.CategoryId = propertyUpdateDTO.CategoryId;
         property.DistrictId = propertyUpdateDTO.DistrictId;
         property.RegionId = propertyUpdateDTO.RegionId;
@@ -188,41 +200,95 @@ public class PropertyService : IPropertyService
         property.ContactPhone = propertyUpdateDTO.ContactPhone;
         property.IsActive = propertyUpdateDTO.IsActive;
 
-        var oldPhotos = _db.PropertyPhotos.Where(pp => pp.PropertyId == propertyId).ToList();
-        if (oldPhotos.Any())
+        // 5. RASMLARNI AQLLI YANGILASH
+        if (propertyUpdateDTO.Photos != null)
         {
-            _db.PropertyPhotos.RemoveRange(oldPhotos);
-        }
+            // Hozirgi rasmlarning URL lari
+            var existingPhotoPaths = property.Photos.Select(p => p.FilePath).ToList();
 
-        if (propertyUpdateDTO.Photos != null && propertyUpdateDTO.Photos.Any())
-        {
-            var newPhotos = propertyUpdateDTO.Photos.Select(url => new PropertyPhoto
+            // Yangi rasmlarning URL lari
+            var newPhotoPaths = propertyUpdateDTO.Photos;
+
+            // Qaysi rasmlar o'chirilishi kerak? (eski rasmlar ichida, lekin yangi rasmlar ichida yo'q)
+            var photosToDelete = property.Photos
+                .Where(p => !newPhotoPaths.Contains(p.FilePath))
+                .ToList();
+
+            // Qaysi rasmlar qo'shilishi kerak? (yangi rasmlar ichida, lekin eski rasmlar ichida yo'q)
+            var pathsToAdd = newPhotoPaths
+                .Where(url => !existingPhotoPaths.Contains(url))
+                .ToList();
+
+            // O'chirish
+            if (photosToDelete.Any())
             {
-                PropertyId = propertyId,
-                FilePath = url,
-                CreatedAt = DateTime.UtcNow
-            }).ToList();
-            _db.PropertyPhotos.AddRange(newPhotos);
-        }
+                _db.PropertyPhotos.RemoveRange(photosToDelete);
 
-        var oldAmenities = _db.PropertyAmenities.Where(pa => pa.PropertyId == propertyId).ToList();
-        if (oldAmenities.Any())
-        {
-            _db.PropertyAmenities.RemoveRange(oldAmenities);
-        }
+                // TODO: Fizik fayllarni ham o'chirish kerak
+                // foreach (var photo in photosToDelete)
+                // {
+                //     File.Delete(photo.FilePath);
+                // }
+            }
 
-        if (propertyUpdateDTO.AmenityIds != null && propertyUpdateDTO.AmenityIds.Any())
-        {
-            var newAmenities = propertyUpdateDTO.AmenityIds.Select(aid => new PropertyAmenity
+            // Qo'shish
+            if (pathsToAdd.Any())
             {
-                PropertyId = propertyId,
-                AmenityId = aid
-            }).ToList();
-            _db.PropertyAmenities.AddRange(newAmenities);
+                var newPhotos = pathsToAdd.Select(url => new PropertyPhoto
+                {
+                    PropertyId = propertyId,
+                    FilePath = url,
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                _db.PropertyPhotos.AddRange(newPhotos);
+            }
         }
 
+        // 6. AMENITY LARNI AQLLI YANGILASH
+        if (propertyUpdateDTO.AmenityIds != null)
+        {
+            // Hozirgi amenity ID lar
+            var existingAmenityIds = property.PropertyAmenities
+                .Select(pa => pa.AmenityId)
+                .ToList();
+
+            // Yangi amenity ID lar
+            var newAmenityIds = propertyUpdateDTO.AmenityIds;
+
+            // Qaysi amenity lar o'chirilishi kerak?
+            var amenitiesToDelete = property.PropertyAmenities
+                .Where(pa => !newAmenityIds.Contains(pa.AmenityId))
+                .ToList();
+
+            // Qaysi amenity lar qo'shilishi kerak?
+            var amenityIdsToAdd = newAmenityIds
+                .Where(id => !existingAmenityIds.Contains(id))
+                .ToList();
+
+            // O'chirish
+            if (amenitiesToDelete.Any())
+            {
+                _db.PropertyAmenities.RemoveRange(amenitiesToDelete);
+            }
+
+            // Qo'shish
+            if (amenityIdsToAdd.Any())
+            {
+                var newAmenities = amenityIdsToAdd.Select(aid => new PropertyAmenity
+                {
+                    PropertyId = propertyId,
+                    AmenityId = aid
+                }).ToList();
+
+                _db.PropertyAmenities.AddRange(newAmenities);
+            }
+        }
+
+        // 7. O'zgarishlarni saqlash
         _db.SaveChanges();
 
+        // 8. Yangilangan ma'lumotni qaytarish
         var updated = _db.Properties
             .Include(p => p.District).ThenInclude(d => d.Region)
             .Include(p => p.Category)

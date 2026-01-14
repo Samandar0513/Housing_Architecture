@@ -72,6 +72,7 @@ public static class BizLayerDependencyInjection
     {
         services.AddValidatorsFromAssemblyContaining<UserRegistrValidator>();
         services.AddValidatorsFromAssemblyContaining<PropertyCreateValidator>();
+        services.AddValidatorsFromAssemblyContaining<PropertyUpdateValidator>();
         services.AddValidatorsFromAssemblyContaining<UserUpdateValidator>();
         services.AddValidatorsFromAssemblyContaining<ChangePasswordValidator>();
         services.AddValidatorsFromAssemblyContaining<CategoryValidator>();

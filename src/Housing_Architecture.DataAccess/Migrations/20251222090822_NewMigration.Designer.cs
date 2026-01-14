@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Housing_Architecture.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251216071703_SeedData")]
-    partial class SeedData
+    [Migration("20251222090822_NewMigration")]
+    partial class NewMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -354,7 +354,7 @@ namespace Housing_Architecture.DataAccess.Migrations
                             Name = "SuperAdmin",
                             Password = "mkE1W532sKVzV0GEvOTSrh38SvsiuV+7q0z/izST7N0=",
                             Phone = "+998901234567",
-                            RegisteredAt = new DateTime(2025, 12, 16, 7, 17, 3, 642, DateTimeKind.Utc).AddTicks(6917),
+                            RegisteredAt = new DateTime(2025, 12, 22, 9, 8, 22, 737, DateTimeKind.Utc).AddTicks(7964),
                             Role = "Admin",
                             Salt = "super-admin-salt-2025"
                         });

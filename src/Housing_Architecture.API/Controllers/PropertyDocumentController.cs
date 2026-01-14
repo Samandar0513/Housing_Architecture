@@ -47,7 +47,7 @@ public class PropertyDocumentController : ControllerBase
     }
 
     [HttpPut("{documentId}/status")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Moderator")]
     public IActionResult UpdateDocumentStatus(int documentId, [FromQuery] string status)
     {
         var result = _documentService.UpdateDocumentStatus(documentId, status);

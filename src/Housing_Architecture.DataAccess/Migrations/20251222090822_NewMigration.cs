@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Housing_Architecture.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class Yangiversiya : Migration
+    public partial class NewMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -253,6 +253,11 @@ namespace Housing_Architecture.DataAccess.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.InsertData(
+                table: "Users",
+                columns: new[] { "Id", "Email", "IsVerified", "Name", "Password", "Phone", "RegisteredAt", "Role", "Salt" },
+                values: new object[] { 1, "superadmin@housing.uz", true, "SuperAdmin", "mkE1W532sKVzV0GEvOTSrh38SvsiuV+7q0z/izST7N0=", "+998901234567", new DateTime(2025, 12, 22, 9, 8, 22, 737, DateTimeKind.Utc).AddTicks(7964), "Admin", "super-admin-salt-2025" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Districts_RegionId",

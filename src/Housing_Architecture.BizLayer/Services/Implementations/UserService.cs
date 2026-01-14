@@ -71,7 +71,7 @@ public class UserService : IUserService
         _db.SaveChanges();
 
         var otp = _otpService.GenerateAndSaveOtp(newUser.Email);
-        _ = _emailService.SendOtpAsync(newUser.Email, otp);
+        var _ = _emailService.SendOtpAsync(newUser.Email, otp);
 
         var token = _jwtTokenService.GenerateJwtToken(newUser);
         var userAuthResponse = new UserAuthResponeDTO
@@ -101,10 +101,10 @@ public class UserService : IUserService
         }
 
         var tempUser = _db.TempUsers.FirstOrDefault(x => x.PhoneNumber == registrDto.Phone);
-        //if (tempUser == null)
-        //{
-        //    return ResponseModel<UserAuthResponeDTO>.Fail("Registratsiya xatoligi", "Telefon raqam uchun vaqtincha foydalanuvchi topilmadi!");
-        //}
+        if (tempUser == null)
+        {
+            return ResponseModel<UserAuthResponeDTO>.Fail("Registratsiya xatoligi", "Telefon raqam uchun vaqtincha foydalanuvchi topilmadi!");
+        }
 
         if (tempUser.OtpCode != otpCode || tempUser.ExpiresAt < DateTime.UtcNow)
         {
@@ -150,10 +150,10 @@ public class UserService : IUserService
             return ResponseModel<UserAuthResponeDTO>.Fail("Login xatoligi", "Email yoki parol noto'g'ri kiritildi!");
         }
 
-        //if (!user.IsVerified)
-        //{
-        //    return ResponseModel<UserAuthResponeDTO>.Fail("Login xatoligi", "Iltimos, avval emailingizni tasdiqlang!");
-        //}
+        if (!user.IsVerified)
+        {
+            return ResponseModel<UserAuthResponeDTO>.Fail("Login xatoligi", "Iltimos, avval emailingizni tasdiqlang!");
+        }
 
         var token = _jwtTokenService.GenerateJwtToken(user);
         var userAuthResponse = new UserAuthResponeDTO
@@ -205,9 +205,10 @@ public class UserService : IUserService
             return ResponseModel<UserDTO>.Fail("Validation xatoligi!", errors);
         }
 
-        user.Name = updateDto.Name ?? user.Name;
-        user.Phone = updateDto.Phone ?? user.Phone;
-        user.Email = updateDto.Email ?? user.Email;
+        user.Name = updateDto.Name;
+        user.Phone = updateDto.Phone;
+        user.Email = updateDto.Email;
+        
 
         _db.Update(user);
         _db.SaveChanges();
@@ -313,6 +314,7 @@ public class UserService : IUserService
 
         return ResponseModel<string>.Ok("Parol muvaffaqiyatli tiklandi.", "Parol muvaffaqiyatli tiklandi.");
     }
+
 
     public ResponseModel<string> VerifyOtp(OtpVerificationModel model)
     {

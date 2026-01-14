@@ -79,9 +79,10 @@ public class PropertyController : ControllerBase
 
     [HttpPut("{propertyId}")]
     [Authorize]
-    public IActionResult UpdateProperty(int propertyId, [FromBody] PropertyCreateDTO propertyUpdateDTO)
+    public IActionResult UpdateProperty(int propertyId, [FromBody] PropertyUpdateDTO propertyUpdateDTO)
     {
-        var result = _propertyService.UpdateProperty(propertyId, propertyUpdateDTO);
+        int currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = _propertyService.UpdateProperty(propertyId, propertyUpdateDTO, currentUserId);
         if (!result.IsSuccess)
             return BadRequest(result);
         return Ok(result);

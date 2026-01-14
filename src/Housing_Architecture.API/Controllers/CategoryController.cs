@@ -17,7 +17,7 @@ public class CategoryController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Moderator")]
     public IActionResult CreateCategory([FromBody] CategoryCreateDTO categoryCreateDTO)
     {
         var result = _categoryService.CreateCategory(categoryCreateDTO);
@@ -43,7 +43,7 @@ public class CategoryController : ControllerBase
     }
 
     [HttpPut("{categoryId}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Moderator")]
     public IActionResult UpdateCategory(int categoryId, [FromBody] CategoryCreateDTO categoryUpdateDTO)
     {
         var result = _categoryService.UpdateCategory(categoryId, categoryUpdateDTO);
@@ -53,7 +53,7 @@ public class CategoryController : ControllerBase
     }
 
     [HttpDelete("{categoryId}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Moderator")]
     public IActionResult DeleteCategory(int categoryId)
     {
         var result = _categoryService.DeleteCategory(categoryId);

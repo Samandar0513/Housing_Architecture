@@ -23,7 +23,7 @@ public class PropertyPhotoService : IPropertyPhotoService
         var property = _db.Properties.FirstOrDefault(p => p.Id == propertyId);
         if (property == null)
         {
-            return ResponseModel<string>.Fail("Xatolik", "Mulk topilmadi!");
+            return ResponseModel<string>.Fail("Xatolik", "E'lon topilmadi!");
         }
 
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
@@ -92,6 +92,6 @@ public class PropertyPhotoService : IPropertyPhotoService
             .Select(p => p.FilePath)
             .ToList();
 
-        return ResponseModel<IEnumerable<string>>.Ok(photos, "Mulk rasmlari muvaffaqiyatli olindi.");
+        return ResponseModel<IEnumerable<string>>.Ok(photos, "E'lon rasmlari muvaffaqiyatli olindi.");
     }
 }

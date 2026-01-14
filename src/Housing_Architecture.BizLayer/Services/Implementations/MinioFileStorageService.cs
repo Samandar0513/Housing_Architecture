@@ -45,7 +45,8 @@ public class MinioFileStorageService : IFileStorageService
                 .WithContentType(file.ContentType));
 
             var protocol = _settings.UseSsl ? "https" : "http";
-            return $"{protocol}://{_settings.Endpoint}/{bucketName}/{objectName}";
+            //return $"{protocol}://{_settings.Endpoint}/{bucketName}/{objectName}";
+            return $"http://localhost:9000/{bucketName}/{objectName}";
         }
         catch (Exception ex)
         {

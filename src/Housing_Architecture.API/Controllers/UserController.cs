@@ -22,6 +22,8 @@ public class UserController : ControllerBase
         _emailService = emailService;
     }
 
+    #region MyRegion // -- ctrl+k+s
+    [HttpGet]
     [HttpPost("register")]
     public IActionResult Register([FromBody] UserRegistrDTO registrDto)
     {
@@ -30,6 +32,7 @@ public class UserController : ControllerBase
             return BadRequest(result);
         return Ok(result);
     }
+    #endregion
 
     [HttpPost("register-by-telegram")]
     public IActionResult RegisterByTelegram([FromQuery] string otpCode, [FromBody] UserRegistrDTO registrDTO)
@@ -66,6 +69,8 @@ public class UserController : ControllerBase
         }
     }
 
+
+    #region Verifikatsiya
     [HttpPost("verify-otp")]
     public IActionResult VerifyOtp([FromBody] OtpVerificationModel model)
     {
@@ -74,6 +79,7 @@ public class UserController : ControllerBase
             return BadRequest(result);
         return Ok(result);
     }
+    #endregion
 
     [HttpPost("change-password")]
     [Authorize]

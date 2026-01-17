@@ -10,5 +10,6 @@ public interface IPropertyDocumentService
     ResponseModel<PropertyDocumentDTO> GetDocumentById(int documentId);
     ResponseModel<IEnumerable<PropertyDocumentDTO>> GetDocumentsByPropertyId(int propertyId);
     ResponseModel<bool> DeleteDocument(int documentId);
-    ResponseModel<PropertyDocumentDTO> UpdateDocumentStatus(int documentId, string status);
+    ResponseModel<PropertyDocumentDTO> UpdateDocumentStatus(int documentId, string status, string? rejectionReason = null);
+    ResponseModel<IEnumerable<PropertyDocumentDTO>> GetPendingDocuments();
 }

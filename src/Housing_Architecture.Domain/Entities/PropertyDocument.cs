@@ -9,6 +9,7 @@ public class PropertyDocument
     public string FileName { get; set; } = string.Empty;
     public string FilePath { get; set; } = string.Empty;
     public DocumentStatus Status { get; set; } = DocumentStatus.Pending;
+    public string? RejectionReason { get; set; }  // Rad etish sababi
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation

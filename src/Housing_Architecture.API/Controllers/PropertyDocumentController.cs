@@ -48,11 +48,20 @@ public class PropertyDocumentController : ControllerBase
 
     [HttpPut("{documentId}/status")]
     [Authorize(Roles = "Admin,Moderator")]
-    public IActionResult UpdateDocumentStatus(int documentId, [FromQuery] string status)
+    public IActionResult UpdateDocumentStatus(int documentId, [FromQuery] string status, [FromQuery] string? rejectionReason = null)
     {
-        var result = _documentService.UpdateDocumentStatus(documentId, status);
+        var result = _documentService.UpdateDocumentStatus(documentId, status, rejectionReason);
         if (!result.IsSuccess)
             return BadRequest(result);
+        return Ok(result);
+    }
+
+    // Moderator uchun - tekshiruv kutayotgan hujjatlar
+    [HttpGet("pending")]
+    [Authorize(Roles = "Admin,Moderator")]
+    public IActionResult GetPendingDocuments()
+    {
+        var result = _documentService.GetPendingDocuments();
         return Ok(result);
     }
 

@@ -48,17 +48,7 @@ public class PropertyUpdateValidator : AbstractValidator<PropertyUpdateDTO>
             .WithMessage("Qurilgan yil 1900 dan hozirgi yilgacha bo'lishi kerak.")
             .When(x => x.BuiltYear.HasValue);
 
-        // RASMLAR VALIDATSIYASI
-        RuleFor(x => x.Photos)
-            .Must(photos => photos == null || photos.Count <= 20)
-            .WithMessage("Maksimal 20 ta rasm yuklash mumkin.")
-            .When(x => x.Photos != null);
-
-        RuleForEach(x => x.Photos)
-            .NotEmpty().WithMessage("Rasm URL bo'sh bo'lmasligi kerak.")
-            .MaximumLength(500).WithMessage("Rasm URL 500 ta belgidan oshmasligi kerak.")
-            .Must(BeValidUrl).WithMessage("Rasm URL formati noto'g'ri.")
-            .When(x => x.Photos != null);
+        // RASMLAR VALIDATSIYASI olib tashlandi - PropertyPhotoController orqali boshqariladi
 
         // AMENITIES VALIDATSIYASI
         RuleFor(x => x.AmenityIds)

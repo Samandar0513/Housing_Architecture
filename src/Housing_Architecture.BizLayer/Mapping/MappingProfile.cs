@@ -19,7 +19,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.PropertyType, opt => opt.MapFrom(src => src.PropertyType.ToString()))
             .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Currency.ToString()))
             .ForMember(dest => dest.Photos, opt => opt.MapFrom(src => src.Photos != null ? src.Photos.Select(x => x.FilePath).ToList() : new List<string>()))
-            .ForMember(dest => dest.Amenities, opt => opt.MapFrom(src => src.PropertyAmenities != null ? src.PropertyAmenities.Where(pa => pa.Amenity != null).Select(pa => pa.Amenity.Name).ToList() : new List<string>()));
+            .ForMember(dest => dest.Amenities, opt => opt.MapFrom(src => src.PropertyAmenities != null ? src.PropertyAmenities.Where(pa => pa.Amenity != null).Select(pa => pa.Amenity.Name).ToList() : new List<string>()))
+            .ForMember(dest => dest.Documents, opt => opt.MapFrom(src => src.Documents != null ? src.Documents : new List<PropertyDocument>()));
 
         CreateMap<PropertyDocument, PropertyDocumentDTO>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));

@@ -85,13 +85,17 @@ public class PropertyPhotoService : IPropertyPhotoService
         return ResponseModel<bool>.Ok(true, "Rasm muvaffaqiyatli o'chirildi.");
     }
 
-    public ResponseModel<IEnumerable<string>> GetPhotosByPropertyId(int propertyId)
+    public ResponseModel<IEnumerable<PhotoDto>> GetPhotosByPropertyId(int propertyId)
     {
         var photos = _db.PropertyPhotos
             .Where(p => p.PropertyId == propertyId)
-            .Select(p => p.FilePath)
+            .Select(p => new PhotoDto
+            {
+                Id = p.Id,
+                FilePath = p.FilePath
+            })
             .ToList();
 
-        return ResponseModel<IEnumerable<string>>.Ok(photos, "E'lon rasmlari muvaffaqiyatli olindi.");
+        return ResponseModel<IEnumerable<PhotoDto>>.Ok(photos, "E'lon rasmlari muvaffaqiyatli olindi.");
     }
 }

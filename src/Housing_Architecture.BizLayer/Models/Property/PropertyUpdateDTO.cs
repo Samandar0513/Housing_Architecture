@@ -24,10 +24,7 @@ namespace Housing_Architecture.BizLayer.Models.Property
         public string ContactPhone { get; set; } = string.Empty;
         public bool IsActive { get; set; }
 
-        // Rasmlar - faqat URL lar keladi
-        public List<string>? Photos { get; set; }
-
-        // Amenity ID lar
+        // Amenity ID lar (Rasmlar alohida PropertyPhotoController orqali boshqariladi)
         public List<int>? AmenityIds { get; set; }
     }
 }

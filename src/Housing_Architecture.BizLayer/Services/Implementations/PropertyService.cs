@@ -108,6 +108,7 @@ public class PropertyService : IPropertyService
             .Include(p => p.Category)
             .Include(p => p.Photos)
             .Include(p => p.PropertyAmenities).ThenInclude(pa => pa.Amenity)
+            .Include(p => p.Documents).ThenInclude(d => d.Status)
             .FirstOrDefault(p => p.Id == propertyId);
 
         if (property == null)
@@ -129,8 +130,10 @@ public class PropertyService : IPropertyService
         .Include(p => p.Category)
         .Include(p => p.Photos)
         .Include(p => p.PropertyAmenities).ThenInclude(pa => pa.Amenity)
-        //.Include(p => p.Documents).Where(p => p.Documents.Any() && p.Documents.Any(d => d.Status == DocumentStatus.Approved))
-        .Where(p=>p.IsActive) // faqat faol mulklar
+        .Include(p => p.Documents)
+        .Where(p => p.IsActive) // faqat faol mulklar
+        // Rad etilgan hujjatli e'lonlarni yashirish
+        .Where(p => !p.Documents.Any(d => d.Status == DocumentStatus.Rejected))
         .ToList();
 
         var propertyDTOs = _mapper.Map<IEnumerable<PropertyDTO>>(properties);
@@ -145,14 +148,11 @@ public class PropertyService : IPropertyService
             .Include(p => p.Category)
             .Include(p => p.Photos)
             .Include(p => p.PropertyAmenities).ThenInclude(pa => pa.Amenity)
-            .Include(p => p.Documents) // ✅ Documents ni include qilish
+            .Include(p => p.Documents) // User o'z e'lonlaridagi hujjatlarni ko'radi/
+            .OrderByDescending(p => p.CreatedAt)
             .ToList();
 
-        if (properties.Count == 0)
-        {
-            return ResponseModel<IEnumerable<PropertyDTO>>.Fail("Xatolik", "Bu foydalanuvchida mulklar topilmadi!");
-        }
-
+        // User o'z e'lonlari topilmasa ham bo'sh ro'yxat qaytariladi
         var propertyDTOs = _mapper.Map<IEnumerable<PropertyDTO>>(properties);
         return ResponseModel<IEnumerable<PropertyDTO>>.Ok(propertyDTOs, "Foydalanuvchi mulklari muvaffaqiyatli olindi.");
     }
@@ -199,51 +199,6 @@ public class PropertyService : IPropertyService
         property.ContactName = propertyUpdateDTO.ContactName;
         property.ContactPhone = propertyUpdateDTO.ContactPhone;
         property.IsActive = propertyUpdateDTO.IsActive;
-
-        // 5. RASMLARNI AQLLI YANGILASH
-        if (propertyUpdateDTO.Photos != null)
-        {
-            // Hozirgi rasmlarning URL lari
-            var existingPhotoPaths = property.Photos.Select(p => p.FilePath).ToList();
-
-            // Yangi rasmlarning URL lari
-            var newPhotoPaths = propertyUpdateDTO.Photos;
-
-            // Qaysi rasmlar o'chirilishi kerak? (eski rasmlar ichida, lekin yangi rasmlar ichida yo'q)
-            var photosToDelete = property.Photos
-                .Where(p => !newPhotoPaths.Contains(p.FilePath))
-                .ToList();
-
-            // Qaysi rasmlar qo'shilishi kerak? (yangi rasmlar ichida, lekin eski rasmlar ichida yo'q)
-            var pathsToAdd = newPhotoPaths
-                .Where(url => !existingPhotoPaths.Contains(url))
-                .ToList();
-
-            // O'chirish
-            if (photosToDelete.Any())
-            {
-                _db.PropertyPhotos.RemoveRange(photosToDelete);
-
-                // TODO: Fizik fayllarni ham o'chirish kerak
-                // foreach (var photo in photosToDelete)
-                // {
-                //     File.Delete(photo.FilePath);
-                // }
-            }
-
-            // Qo'shish
-            if (pathsToAdd.Any())
-            {
-                var newPhotos = pathsToAdd.Select(url => new PropertyPhoto
-                {
-                    PropertyId = propertyId,
-                    FilePath = url,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList();
-
-                _db.PropertyPhotos.AddRange(newPhotos);
-            }
-        }
 
         // 6. AMENITY LARNI AQLLI YANGILASH
         if (propertyUpdateDTO.AmenityIds != null)

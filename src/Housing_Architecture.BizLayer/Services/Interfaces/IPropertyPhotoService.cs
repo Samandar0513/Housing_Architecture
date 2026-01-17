@@ -7,5 +7,5 @@ public interface IPropertyPhotoService
 {
     Task<ResponseModel<string>> UploadPhotoAsync(int propertyId, IFormFile file);
     ResponseModel<bool> DeletePhoto(int photoId);
-    ResponseModel<IEnumerable<string>> GetPhotosByPropertyId(int propertyId);
+    ResponseModel<IEnumerable<PhotoDto>> GetPhotosByPropertyId(int propertyId);
 }

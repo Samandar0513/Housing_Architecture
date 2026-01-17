@@ -1,3 +1,5 @@
+using Housing_Architecture.BizLayer.Models.PropertyDocument;
+
 namespace Housing_Architecture.BizLayer.Models.Property;
 
 public class PropertyDTO
@@ -21,4 +23,5 @@ public class PropertyDTO
     public DateTime CreatedAt { get; set; }
     public List<string> Photos { get; set; } = new();
     public List<string> Amenities { get; set; } = new();
+    public List<PropertyDocumentDTO> Documents { get; set; } = new();
 }

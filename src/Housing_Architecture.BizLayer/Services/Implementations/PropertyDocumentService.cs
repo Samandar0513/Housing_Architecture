@@ -63,6 +63,7 @@ public class PropertyDocumentService : IPropertyDocumentService
                 FileName = document.FileName,
                 FilePath = document.FilePath,
                 Status = document.Status.ToString(),
+                RejectionReason = document.RejectionReason,
                 CreatedAt = document.CreatedAt
             };
 
@@ -89,6 +90,7 @@ public class PropertyDocumentService : IPropertyDocumentService
             FileName = document.FileName,
             FilePath = document.FilePath,
             Status = document.Status.ToString(),
+            RejectionReason = document.RejectionReason,
             CreatedAt = document.CreatedAt
         };
 
@@ -108,6 +110,7 @@ public class PropertyDocumentService : IPropertyDocumentService
             FileName = d.FileName,
             FilePath = d.FilePath,
             Status = d.Status.ToString(),
+            RejectionReason = d.RejectionReason,
             CreatedAt = d.CreatedAt
         });
 
@@ -139,7 +142,7 @@ public class PropertyDocumentService : IPropertyDocumentService
         return ResponseModel<bool>.Ok(true, "Hujjat muvaffaqiyatli o'chirildi.");
     }
 
-    public ResponseModel<PropertyDocumentDTO> UpdateDocumentStatus(int documentId, string status)
+    public ResponseModel<PropertyDocumentDTO> UpdateDocumentStatus(int documentId, string status, string? rejectionReason = null)
     {
         var document = _db.PropertyDocuments.FirstOrDefault(d => d.Id == documentId);
         if (document == null)
@@ -153,6 +156,17 @@ public class PropertyDocumentService : IPropertyDocumentService
         }
 
         document.Status = documentStatus;
+
+        // Rad etilgan bo'lsa, sababni saqlash
+        if (documentStatus == DocumentStatus.Rejected)
+        {
+            document.RejectionReason = rejectionReason;
+        }
+        else
+        {
+            document.RejectionReason = null;
+        }
+
         _db.Update(document);
         _db.SaveChanges();
 
@@ -163,9 +177,32 @@ public class PropertyDocumentService : IPropertyDocumentService
             FileName = document.FileName,
             FilePath = document.FilePath,
             Status = document.Status.ToString(),
+            RejectionReason = document.RejectionReason,
             CreatedAt = document.CreatedAt
         };
 
         return ResponseModel<PropertyDocumentDTO>.Ok(documentDTO, "Hujjat statusi muvaffaqiyatli yangilandi.");
+    }
+
+    // Barcha pending hujjatlarni olish (Moderator uchun)
+    public ResponseModel<IEnumerable<PropertyDocumentDTO>> GetPendingDocuments()
+    {
+        var documents = _db.PropertyDocuments
+            .Where(d => d.Status == DocumentStatus.Pending)
+            .OrderByDescending(d => d.CreatedAt)
+            .ToList();
+
+        var documentDTOs = documents.Select(d => new PropertyDocumentDTO
+        {
+            Id = d.Id,
+            PropertyId = d.PropertyId,
+            FileName = d.FileName,
+            FilePath = d.FilePath,
+            Status = d.Status.ToString(),
+            RejectionReason = d.RejectionReason,
+            CreatedAt = d.CreatedAt
+        });
+
+        return ResponseModel<IEnumerable<PropertyDocumentDTO>>.Ok(documentDTOs, "Tekshiruv kutayotgan hujjatlar.");
     }
 }

@@ -1,12 +1,16 @@
 ﻿using AutoMapper;
 using FluentValidation;
+using Housing_Architecture.BizLayer.Common;
 using Housing_Architecture.BizLayer.Models;
 using Housing_Architecture.BizLayer.Models.Property;
+using Housing_Architecture.BizLayer.Models.PropertyDocument;
 using Housing_Architecture.BizLayer.Services.Interfaces;
 using Housing_Architecture.DataAccess.Persistence;
 using Housing_Architecture.Domain.Entities;
 using Housing_Architecture.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Minio.DataModel.Notification;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Housing_Architecture.BizLayer.Services.Implementations;
 
@@ -108,7 +112,7 @@ public class PropertyService : IPropertyService
             .Include(p => p.Category)
             .Include(p => p.Photos)
             .Include(p => p.PropertyAmenities).ThenInclude(pa => pa.Amenity)
-            .Include(p => p.Documents).ThenInclude(d => d.Status)
+            //.Include(p => p.Documents).ThenInclude(d => d.Status)
             .FirstOrDefault(p => p.Id == propertyId);
 
         if (property == null)
@@ -123,21 +127,67 @@ public class PropertyService : IPropertyService
         return ResponseModel<PropertyDTO>.Ok(propertyDto, "Mulk muvaffaqiyatli topildi.");
     }
 
-    public ResponseModel<IEnumerable<PropertyDTO>> GetAllProperties()
+    public ResponseModel<PagedResult<PropertyDTO>> GetAllProperties(int PageNumber = 1, int PageSize = 10)
     {
-        var properties = _db.Properties
-        .Include(p => p.District).ThenInclude(d => d.Region)
-        .Include(p => p.Category)
-        .Include(p => p.Photos)
-        .Include(p => p.PropertyAmenities).ThenInclude(pa => pa.Amenity)
-        .Include(p => p.Documents)
-        .Where(p => p.IsActive) // faqat faol mulklar
-        // Rad etilgan hujjatli e'lonlarni yashirish
-        .Where(p => !p.Documents.Any(d => d.Status == DocumentStatus.Rejected))
-        .ToList();
+        var query = _db.Properties
+            .Include(p => p.Category)
+            .Include(p => p.District).ThenInclude(d => d.Region)
+            .Include(p => p.Photos)
+            .Include(p => p.PropertyAmenities).ThenInclude(pa => pa.Amenity)
+            .Include(p => p.Documents)
+            .OrderByDescending(p => p.CreatedAt)
+            .AsQueryable();
+        var totalCount = query.Count();
 
-        var propertyDTOs = _mapper.Map<IEnumerable<PropertyDTO>>(properties);
-        return ResponseModel<IEnumerable<PropertyDTO>>.Ok(propertyDTOs, "Barcha mulklar muvaffaqiyatli olindi.");
+        var properties = query
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+        var propertyDTOs = properties.Select(p => new PropertyDTO
+        {
+            Id = p.Id,
+            UserId = p.UserId,
+            CategoryName = p.Category?.Name,
+            DistrictName = p.District?.Name,
+            RegionName = p.District?.Region?.Name,
+            PropertyType = p.PropertyType.ToString(),
+            Description = p.Description,
+            Price = p.Price,
+            Currency = p.Currency.ToString(),
+            TotalArea = p.TotalArea,
+            Rooms = p.Rooms,
+            Floor = p.Floor,
+            BuiltYear = p.BuiltYear,
+            ViewsCount = p.ViewsCount,
+            ContactName = p.ContactName,
+            ContactPhone = p.ContactPhone,
+            CreatedAt = p.CreatedAt,
+            IsActive = p.IsActive,
+            Photos = p.Photos?.Select(x => x.FilePath).ToList() ?? new List<string>(),
+            Amenities = p.PropertyAmenities?
+                .Where(pa => pa.Amenity != null)
+                .Select(pa => pa.Amenity.Name)
+                .ToList() ?? new List<string>(),
+            Documents = p.Documents?.Select(d => new PropertyDocumentDTO
+            {
+                Id = d.Id,
+                PropertyId = d.PropertyId,
+                FileName = d.FileName,
+                FilePath = d.FilePath,
+                Status = d.Status.ToString(),
+                RejectionReason = d.RejectionReason,
+                CreatedAt = d.CreatedAt
+            }).ToList() ?? new List<PropertyDocumentDTO>()
+        }).ToList();
+
+        var pagedResult = PagedResult<PropertyDTO>.Create(
+            propertyDTOs,
+            totalCount,
+            PageNumber,
+            PageSize);
+
+        return ResponseModel<PagedResult<PropertyDTO>>.Ok(pagedResult, "Barcha mulklar muvaffaqiyatli olindi.");
     }
 
     public ResponseModel<IEnumerable<PropertyDTO>> GetAllPropertiesByUserId(int userId)
@@ -281,5 +331,26 @@ public class PropertyService : IPropertyService
         _db.SaveChanges();
 
         return ResponseModel<bool>.Ok(true, "Mulk muvaffaqiyatli o'chirildi.");
+    }
+
+    public ResponseModel<bool> TogglePropertyActive(int propertyId, int currentUserId)
+    {
+        var property = _db.Properties.FirstOrDefault(p => p.Id == propertyId);
+
+        if (property == null)
+        {
+            return ResponseModel<bool>.Fail("Xatolik", "Mulk topilmadi!");
+        }
+
+        if (property.UserId != currentUserId)
+        {
+            return ResponseModel<bool>.Fail("Xatolik", "Sizda bu mulkni o'zgartirish huquqi yo'q!");
+        }
+
+        property.IsActive = !property.IsActive;
+        _db.SaveChanges();
+
+        var status = property.IsActive ? "faollashtirildi" : "nofaol qilindi";
+        return ResponseModel<bool>.Ok(property.IsActive, $"E'lon muvaffaqiyatli {status}.");
     }
 }

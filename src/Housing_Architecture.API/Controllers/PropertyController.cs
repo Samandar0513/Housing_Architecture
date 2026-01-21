@@ -49,17 +49,30 @@ public class PropertyController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet]
-    public IActionResult GetAllProperties()
+    [HttpGet("Admin")]
+    [Authorize(Roles = "Admin,Moderator")]
+    public IActionResult GetAllProperties([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var result = _propertyService.GetAllProperties();
+        var result = _propertyService.GetAllProperties(pageNumber, pageSize);
         return Ok(result);
     }
+
+    //[HttpGet("paged")]
+    //[Authorize(Roles = "Admin,Moderator")]
+    //public IActionResult GetAllPropertiesPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    //{
+    //    var result = _propertyService.GetAllPropertiesPaged(pageNumber, pageSize);
+    //    return Ok(result);
+    //}
 
     [HttpGet("user/{userId}")]
     [Authorize]
     public IActionResult GetAllPropertiesByUserId()
     {
+        //if (userId == 0)
+        //{
+        //    userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        //}
         int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         var result = _propertyService.GetAllPropertiesByUserId(userId);
         if (!result.IsSuccess)
@@ -93,6 +106,17 @@ public class PropertyController : ControllerBase
     public IActionResult DeleteProperty(int propertyId)
     {
         var result = _propertyService.DeleteProperty(propertyId);
+        if (!result.IsSuccess)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
+    [HttpPatch("{propertyId}/toggle-active")]
+    [Authorize]
+    public IActionResult TogglePropertyActive(int propertyId)
+    {
+        int currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = _propertyService.TogglePropertyActive(propertyId, currentUserId);
         if (!result.IsSuccess)
             return BadRequest(result);
         return Ok(result);

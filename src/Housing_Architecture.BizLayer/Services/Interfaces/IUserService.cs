@@ -1,3 +1,5 @@
+using Housing_Architecture.BizLayer.Common;
+using Housing_Architecture.BizLayer.Filters;
 using Housing_Architecture.BizLayer.Models;
 using Housing_Architecture.BizLayer.Models.User;
 using Housing_Architecture.Domain.Enums;
@@ -12,7 +14,8 @@ public interface IUserService
     ResponseModel<UserDTO> GetUserById(int userId);
     ResponseModel<UserDTO> UpdateUser(int userId, UserUpdateDTO updateDto);
     ResponseModel<bool> DeleteUser(int userId);
-    ResponseModel<IEnumerable<UserDTO>> GetAllUsers();
+    //ResponseModel<IEnumerable<UserDTO>> GetAllUsers(); --->> MyRegion
+    ResponseModel<PagedResult<UserDTO>> GetAllUsersPaged(UserFilterDTO filter);
     ResponseModel<bool> ChangePassword(int userId, ChangePasswordDTO changePasswordDto);
     ResponseModel<string> ResetPassword(ResetPasswordDTO resetPasswordDto);
     ResponseModel<string> VerifyOtp(OtpVerificationModel model);

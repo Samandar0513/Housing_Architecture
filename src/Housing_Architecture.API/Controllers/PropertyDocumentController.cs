@@ -59,9 +59,9 @@ public class PropertyDocumentController : ControllerBase
     // Moderator uchun - tekshiruv kutayotgan hujjatlar
     [HttpGet("pending")]
     [Authorize(Roles = "Admin,Moderator")]
-    public IActionResult GetPendingDocuments()
+    public IActionResult GetPendingDocuments([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var result = _documentService.GetPendingDocuments();
+        var result = _documentService.GetPendingDocuments(pageNumber, pageSize);
         return Ok(result);
     }
 

@@ -21,6 +21,7 @@ public class PropertyDTO
     public string? ContactName { get; set; }
     public string? ContactPhone { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool IsActive { get; set; }
     public List<string> Photos { get; set; } = new();
     public List<string> Amenities { get; set; } = new();
     public List<PropertyDocumentDTO> Documents { get; set; } = new();

@@ -1,3 +1,4 @@
+using Housing_Architecture.BizLayer.Common;
 using Housing_Architecture.BizLayer.Models;
 using Housing_Architecture.BizLayer.Models.PropertyDocument;
 using Housing_Architecture.BizLayer.Services.Interfaces;
@@ -185,11 +186,17 @@ public class PropertyDocumentService : IPropertyDocumentService
     }
 
     // Barcha pending hujjatlarni olish (Moderator uchun)
-    public ResponseModel<IEnumerable<PropertyDocumentDTO>> GetPendingDocuments()
+    public ResponseModel<PagedResult<PropertyDocumentDTO>> GetPendingDocuments(int pageNumber = 1, int pageSize = 10)
     {
-        var documents = _db.PropertyDocuments
+        var query = _db.PropertyDocuments
             .Where(d => d.Status == DocumentStatus.Pending)
-            .OrderByDescending(d => d.CreatedAt)
+            .OrderByDescending(d => d.CreatedAt);
+
+        var totalCount = query.Count();
+
+        var documents = query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToList();
 
         var documentDTOs = documents.Select(d => new PropertyDocumentDTO
@@ -201,8 +208,14 @@ public class PropertyDocumentService : IPropertyDocumentService
             Status = d.Status.ToString(),
             RejectionReason = d.RejectionReason,
             CreatedAt = d.CreatedAt
-        });
+        }).ToList();
 
-        return ResponseModel<IEnumerable<PropertyDocumentDTO>>.Ok(documentDTOs, "Tekshiruv kutayotgan hujjatlar.");
+        var pagedResult = PagedResult<PropertyDocumentDTO>.Create(
+            documentDTOs,
+            totalCount,
+            pageNumber,
+            pageSize);
+
+        return ResponseModel<PagedResult<PropertyDocumentDTO>>.Ok(pagedResult, "Tekshiruv kutayotgan hujjatlar.");
     }
 }

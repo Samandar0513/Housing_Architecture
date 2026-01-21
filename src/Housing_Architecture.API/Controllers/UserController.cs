@@ -1,3 +1,4 @@
+using Housing_Architecture.BizLayer.Filters;
 using Housing_Architecture.BizLayer.Models.User;
 using Housing_Architecture.BizLayer.Services.Interfaces;
 using Housing_Architecture.Domain.Enums;
@@ -144,11 +145,23 @@ public class UserController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("users")]
+    #region MyRegion
+    //[HttpGet("users")]
+    //[Authorize(Roles = "Admin")]
+    //public IActionResult GetAllUsers()
+    //{
+    //    var result = _userService.GetAllUsers();
+    //    if (!result.IsSuccess)
+    //        return NotFound(result);
+    //    return Ok(result);
+    //} 
+    #endregion
+
+    [HttpGet("users/paged")]
     [Authorize(Roles = "Admin")]
-    public IActionResult GetAllUsers()
+    public IActionResult GetAllUsersPaged([FromQuery] UserFilterDTO filter)
     {
-        var result = _userService.GetAllUsers();
+        var result = _userService.GetAllUsersPaged(filter);
         if (!result.IsSuccess)
             return NotFound(result);
         return Ok(result);

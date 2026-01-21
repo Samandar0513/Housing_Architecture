@@ -1,5 +1,6 @@
 using FluentValidation;
 using Housing_Architecture.BizLayer.Common;
+using Housing_Architecture.BizLayer.Filters;
 using Housing_Architecture.BizLayer.Models;
 using Housing_Architecture.BizLayer.Models.User;
 using Housing_Architecture.BizLayer.Services.Interfaces;
@@ -241,13 +242,53 @@ public class UserService : IUserService
         return ResponseModel<bool>.Ok(true, "Foydalanuvchi muvaffaqiyatli o'chirildi.");
     }
 
-    public ResponseModel<IEnumerable<UserDTO>> GetAllUsers()
+   #region MyRegion
+    //public ResponseModel<IEnumerable<UserDTO>> GetAllUsers()
+    //{
+    //    var users = _db.Users.ToList();
+    //    if (users.Count == 0)
+    //    {
+    //        return ResponseModel<IEnumerable<UserDTO>>.Fail("Xatolik", "Hech qanday foydalanuvchi topilmadi!");
+    //    }
+
+    //    var userDtos = users.Select(user => new UserDTO
+    //    {
+    //        Id = user.Id,
+    //        Name = user.Name,
+    //        Phone = user.Phone,
+    //        Email = user.Email,
+    //        Role = user.Role,
+    //        RegisteredAt = user.RegisteredAt,
+    //        IsVerified = user.IsVerified
+    //    });
+
+    //    return ResponseModel<IEnumerable<UserDTO>>.Ok(userDtos, "Barcha foydalanuvchilar muvaffaqiyatli olindi.");
+    //} 
+    #endregion
+
+    public ResponseModel<PagedResult<UserDTO>> GetAllUsersPaged(UserFilterDTO filter)
     {
-        var users = _db.Users.ToList();
-        if (users.Count == 0)
+        var query = _db.Users.AsQueryable();
+
+        // Search filter
+        if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            return ResponseModel<IEnumerable<UserDTO>>.Fail("Xatolik", "Hech qanday foydalanuvchi topilmadi!");
+            var search = filter.Search.ToLower();
+            query = query.Where(u =>
+                u.Email.ToLower().Contains(search) ||
+                u.Name.ToLower().Contains(search) ||
+                u.Phone.Contains(search));
         }
+
+        // Order by registration date (newest first)
+        query = query.OrderByDescending(u => u.RegisteredAt);
+
+        var totalCount = query.Count();
+
+        var users = query
+            .Skip((filter.PageNumber - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToList();
 
         var userDtos = users.Select(user => new UserDTO
         {
@@ -258,9 +299,15 @@ public class UserService : IUserService
             Role = user.Role,
             RegisteredAt = user.RegisteredAt,
             IsVerified = user.IsVerified
-        });
+        }).ToList();
 
-        return ResponseModel<IEnumerable<UserDTO>>.Ok(userDtos, "Barcha foydalanuvchilar muvaffaqiyatli olindi.");
+        var pagedResult = PagedResult<UserDTO>.Create(
+            userDtos,
+            totalCount,
+            filter.PageNumber,
+            filter.PageSize);
+
+        return ResponseModel<PagedResult<UserDTO>>.Ok(pagedResult, "Foydalanuvchilar muvaffaqiyatli olindi.");
     }
 
     public ResponseModel<bool> ChangePassword(int userId, ChangePasswordDTO changePasswordDto)

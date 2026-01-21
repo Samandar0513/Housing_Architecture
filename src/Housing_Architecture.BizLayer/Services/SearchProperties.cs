@@ -24,6 +24,9 @@ public class SearchPropertiesService
             .Include(p => p.District).ThenInclude(d => d.Region)
             .Include(p => p.Photos)
             .Include(p => p.PropertyAmenities).ThenInclude(pa => pa.Amenity)
+            .Include(p => p.Documents)
+            .Where(p => p.IsActive) // faqat faol e'lonlar
+            .Where(p => p.Documents.Any(d => d.Status == DocumentStatus.Approved)) // rad etilgan hujjatli e'lonlarni yashirish
             .AsQueryable();
 
         // Category filter
